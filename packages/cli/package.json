@@ -1,0 +1,22 @@
+{
+  "name": "@api2mcp/cli",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "bin": {
+    "api2mcp": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run",
+    "lint": "eslint src/"
+  },
+  "dependencies": {
+    "@api2mcp/core": "workspace:*",
+    "@api2mcp/server": "workspace:*",
+    "@api2mcp/rag": "workspace:*",
+    "zod": "^3.23.0"
+  }
+}
