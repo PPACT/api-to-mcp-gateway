@@ -10,7 +10,7 @@
 SPEC ──→ INTERFACE ──→ PLAN ──→ IMPLEMENT ──→ REVIEW ──→ SHIP
   │          │           │          │            │          │
   ▼          ▼           ▼          ▼            ▼          ▼
-SPEC.md   types.ts    tasks/      TDD +      Five-Axis   Demo
+SPEC.md   types.ts    tasks/      TDD +      Five-Axis   Release
            contracts  plan.md     Increments  Review     Script
 ```
 
@@ -33,7 +33,7 @@ SPEC.md   types.ts    tasks/      TDD +      Five-Axis   Demo
 
 | 要素 | 说明 | 本项目的关键约束 |
 |------|------|-----------------|
-| **Objective** | 做什么、为谁做、成功标准 | 求职 Demo；输入 OpenAPI → 输出 MCP Server；AI 成功调用即达标 |
+| **Objective** | 做什么、为谁做、成功标准 | 输入 OpenAPI → 输出 MCP Server；AI 成功调用即达标 |
 | **Commands** | 完整可执行命令 | `pnpm build`, `pnpm test`, `pnpm dev`, `pnpm lint` |
 | **Project Structure** | 目录结构 + 职责说明 | monorepo: core / server / cli |
 | **Code Style** | 命名 + 格式 + 真实代码示例 | TypeScript strict, 函数式优先, 蛇形命名 tool name |
@@ -653,7 +653,7 @@ Accepted
 
 ## Alternatives Considered
 - stdio: 拒绝。Gateway 需要同时服务多个 AI 客户端。
-- 双 transport: 拒绝。维护两个 transport 不利于 Demo 稳定性。
+- 双 transport: 拒绝。维护两个 transport 增加了不必要的复杂度。
 
 ## Consequences
 - 需要 Express HTTP server（已选）
@@ -690,8 +690,8 @@ Accepted
 ## Architecture
 架构图 + 包职责说明 + ADR 链接
 
-## Demo
-3 分钟演示脚本
+## Usage Example
+快速使用示例脚本
 ```
 
 ### 注释原则

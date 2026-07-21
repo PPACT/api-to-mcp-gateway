@@ -1,6 +1,6 @@
 # API-to-MCP Gateway — 项目 Spec
 
-> 求职 Demo：将任意 REST API（OpenAPI/Swagger）自动转换为 MCP Server，让 AI Agent 能直接调用第三方 API。
+> 将任意 REST API（OpenAPI/Swagger）自动转换为 MCP Server，让 AI Agent 能直接调用第三方 API。
 
 ---
 
@@ -17,14 +17,11 @@
 | 只读 | 可读写（CRUD） |
 | 单系统 | 桥接任意第三方 API |
 
-### Demo 叙事（面试用）
-> "我输入飞书/Notion/GitHub 的 OpenAPI 文档，平台自动生成 MCP Server。然后让 Claude 通过这个 MCP Server 直接操作这些平台——比如「帮我在 Notion 创建一个数据库，把 GitHub Issue 列表写进去」——Agent 自主编排多步 API 调用完成这个任务。"
-
 ---
 
 ## 2. 核心功能
 
-### P0（必须，Demo 核心链路）
+### P0（核心链路）
 1. **OpenAPI 解析** — 输入 Swagger/OpenAPI 2.0/3.0 JSON 或 URL，解析出所有 endpoints
 2. **MCP Tool 生成** — 每个 API operation → 一个 MCP tool（name/description/inputSchema）
 3. **MCP Server 运行时** — Streamable HTTP transport，标准 JSON-RPC 2.0 协议
@@ -225,24 +222,15 @@ GET    /api/logs            — 调用日志
 | 1-2 | `packages/core` — OpenAPI 解析 + MCP tool schema 转换 |
 | 3-4 | `packages/server` — MCP Server 运行时（Streamable HTTP + 工具注册 + API 代理） |
 | 5 | `packages/cli` — CLI 入口 `api2mcp serve` |
-| 6-7 | 联调 + 端到端 Demo（用一个真实 API 演示） |
+| 6-7 | 联调 + 端到端测试（用一个真实 API 验证） |
 
-### Week 2：增强功能（P1 + 面试准备）
+### Week 2：增强功能（P1）
 | 天 | 任务 |
 |---|------|
 | 8-9 | `packages/rag` — 文档向量化 + 检索 |
-| 10-11 | `packages/agent` — Agent 编排层 + 多步调用 Demo |
+| 10-11 | `packages/agent` — Agent 编排层 + 多步调用 |
 | 12 | Auth 管理 + Error 处理完善 |
-| 13-14 | README + Demo 视频脚本 + 面试 PPT |
-
----
-
-## 9. 面试话术要点
-
-1. **为什么做这个** — MCP 生态工具链不成熟，现有开源项目都是 stdio-only，我做了 Streamable HTTP
-2. **技术亮点** — OpenAPI schema → JSON Schema → MCP inputSchema 的映射链路；LLM 增强描述提升 AI 调用准确率；RAG 让 Agent 不盲调 API
-3. **与现有方案对比** — openapi-mcp-gateway / criteo/openapi-to-mcp 都只支持 stdio，我做成了远程服务
-4. **扩展性** — 可以接入 Auth 管理、多 API 聚合、Web UI 操作面板
+| 13-14 | README + 文档完善 + 最终测试 |
 
 ---
 
