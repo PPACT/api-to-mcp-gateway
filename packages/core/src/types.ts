@@ -50,7 +50,7 @@ export interface ApiOperation {
   tags?: string[];
   parameters: ApiParameter[];
   requestBody?: ApiRequestBody;
-  responses: Record<string, ApiResponse>;
+  responses: Record<string, unknown>;
   deprecated?: boolean;
 }
 

@@ -23,7 +23,7 @@ export function convertOperation(op: ApiOperation, source: string): MCPToolDef {
   if (op.requestBody) {
     const jsonContent = op.requestBody.content['application/json'];
     if (jsonContent?.schema?.properties) {
-      for (const [key, schema] of Object.entries(jsonContent.schema.properties)) {
+      for (const [key, schema] of Object.entries(jsonContent.schema.properties as Record<string, Record<string, unknown>>)) {
         properties[key] = mapSchemaProperty(schema);
       }
       if (jsonContent.schema.required) {
@@ -62,7 +62,6 @@ function mapParameter(param: ApiParameter): MCPSchemaProperty {
     type: param.schema.type ?? 'string',
     description: param.description ?? param.name + ' (' + param.in + ')',
     enum: param.schema.enum,
-    format: param.schema.format,
   };
 }
 
