@@ -17,6 +17,7 @@
     "@api2mcp/core": "workspace:*",
     "@api2mcp/server": "workspace:*",
     "@api2mcp/rag": "workspace:*",
-    "zod": "^3.23.0"
+    "zod": "^3.23.0",
+    "yaml": "^2.6.0"
   }
 }

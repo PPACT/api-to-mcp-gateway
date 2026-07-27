@@ -1,7 +1,7 @@
-import type { ApiOperation, ApiSource, MCPToolDef, CallToolResult, ToolError, ProxyRequest } from '../packages/core/src/types.js';
-import type { IApiProxy } from '../packages/core/src/contracts.js';
-import { convertOperation } from '../packages/core/src/converter.js';
-import type { AuthManager } from '../packages/server/src/auth.js';
+import type { ApiOperation, ApiSource, MCPToolDef, CallToolResult, ToolError, ProxyRequest } from '@api2mcp/core';
+import type { IApiProxy } from '@api2mcp/core';
+import { convertOperation } from '@api2mcp/core';
+import { AuthManager } from './auth.js';
 
 interface ToolEntry {
   operation: ApiOperation;

@@ -2,3 +2,21 @@ node_modules/
 dist/
 .env
 *.tsbuildinfo
+.pnpm-store/
+.claude/
+
+# 密钥与凭证
+*.key
+*.pem
+*.cert
+*.pfx
+credentials*
+secrets*
+*.token
+.env.*
+!.env.example
+
+# 内部规划文档（不公开）
+SPEC.md
+SDLC.md
+tasks/

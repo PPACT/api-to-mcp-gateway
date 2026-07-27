@@ -1,0 +1,110 @@
+openapi: 3.0.0
+info:
+  title: Mock Test API
+  version: 1.0.0
+  description: A simple mock API for testing
+servers:
+  - url: http://localhost:8081/api
+paths:
+  /users:
+    get:
+      operationId: listUsers
+      summary: List all users
+      description: Get a list of all users
+      parameters:
+        - name: page
+          in: query
+          description: Page number
+          required: false
+          schema:
+            type: integer
+        - name: limit
+          in: query
+          description: Items per page
+          required: false
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: A list of users
+    post:
+      operationId: createUser
+      summary: Create a new user
+      description: Create a new user with the given data
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: User's full name
+                email:
+                  type: string
+                  description: User's email address
+              required:
+                - name
+                - email
+      responses:
+        '201':
+          description: User created successfully
+  /users/{id}:
+    get:
+      operationId: getUserById
+      summary: Get user by ID
+      description: Retrieve a specific user by their ID
+      parameters:
+        - name: id
+          in: path
+          description: User ID
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: User found
+        '404':
+          description: User not found
+    put:
+      operationId: updateUser
+      summary: Update user
+      description: Update an existing user
+      parameters:
+        - name: id
+          in: path
+          description: User ID
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: User's full name
+                email:
+                  type: string
+                  description: User's email address
+      responses:
+        '200':
+          description: User updated successfully
+    delete:
+      operationId: deleteUser
+      summary: Delete user
+      description: Delete a user by ID
+      parameters:
+        - name: id
+          in: path
+          description: User ID
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: User deleted successfully

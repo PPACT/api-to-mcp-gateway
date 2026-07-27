@@ -37,7 +37,7 @@ export async function parseOpenApiSpec(filePath: string): Promise<ApiOperation[]
         tags: (data.tags as string[]) ?? undefined,
         parameters: extractParameters(data.parameters),
         requestBody: extractRequestBody(data.requestBody),
-        responses: extractResponses(data.responses),
+        responses: extractResponses(data.responses) as Record<string, unknown>,
         deprecated: (data.deprecated as boolean) ?? undefined,
       });
     }
