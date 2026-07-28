@@ -3,7 +3,7 @@ import { parseArgs } from 'node:util';
 import { existsSync, readFileSync, writeFileSync, rmSync, mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { parseOpenApiSpec, Scorer, Enhancer, type ApiSource, type ScoreReport } from '@api2mcp/core';
+import { parseOpenApiSpec, Scorer, Enhancer, createLLMBackend, type ApiSource, type ScoreReport } from '@api2mcp/core';
 import {
   ToolRegistry,
   ApiProxy,
@@ -220,10 +220,27 @@ async function main(): Promise<void> {
     printScoreReport(report);
 
     if (doEnhance) {
-      const enhanceWarn = report.operations.filter((o) => o.level === 'enhance_first');
-      if (enhanceWarn.length > 0) {
-        process.stdout.write('\nEnhance requires LLM backend — set ANTHROPIC_API_KEY or OPENAI_API_KEY.\n');
-        process.stdout.write(enhanceWarn.length + ' operation(s) marked for enhancement.\n');
+      const llm = createLLMBackend();
+      if (!llm) {
+        process.stdout.write('\nEnhance requires ANTHROPIC_API_KEY or OPENAI_API_KEY env var.\n');
+        process.stdout.write(report.operations.filter((o) => o.level === 'enhance_first').length + ' operation(s) could benefit.\n');
+      } else {
+        process.stdout.write('\nEnhancing with LLM...\n');
+        const enhancer = new Enhancer(llm);
+        const { results } = await enhancer.enhanceBatch(report.operations
+          .filter((o) => o.level !== 'expose')
+          .map((o) => allOperations.find((a) => a.operationId === o.operationId)!)
+          .filter(Boolean),
+        );
+        process.stdout.write('Enhanced ' + results.filter((r) => r.changes.length > 0).length + ' operation(s).\n');
+        // Re-register enhanced operations
+        for (const r of results) {
+          const op = allOperations.find((a) => a.operationId === r.operationId);
+          if (op && r.changes.length > 0) {
+            if (r.after.summary) op.summary = r.after.summary;
+            if (r.after.description) op.description = r.after.description;
+          }
+        }
       }
     }
   }
