@@ -178,6 +178,80 @@ export interface RAGDocument {
 }
 
 // ============================================================
+// Score Types
+// ============================================================
+
+export type ScoreLevel = 'expose' | 'enhance_first' | 'do_not_expose';
+
+export interface ScoreIssue {
+  field: string;
+  severity: 'error' | 'warning' | 'info';
+  message: string;
+  dimension: string;
+}
+
+export interface DimensionScore {
+  name: string;
+  score: number;
+  maxScore: number;
+  issues: ScoreIssue[];
+}
+
+export interface OpScore {
+  operationId: string;
+  method: string;
+  path: string;
+  totalScore: number;
+  dimensions: DimensionScore[];
+  issues: ScoreIssue[];
+  level: ScoreLevel;
+  /** true 表示 LLM 参与了评分裁决 */
+  llmFallback: boolean;
+}
+
+export interface ScoreReport {
+  overall: number;
+  operationCount: number;
+  summary: {
+    expose: number;
+    enhanceFirst: number;
+    doNotExpose: number;
+  };
+  operations: OpScore[];
+}
+
+// ============================================================
+// Enhancer Types
+// ============================================================
+
+export interface EnhanceOptions {
+  /** 要增强的字段 */
+  fields?: ('description' | 'example' | 'summary')[];
+  /** 是否使用 LLM（默认 true） */
+  useLLM?: boolean;
+  /** 只增强被标记为 enhance_first 的 operation */
+  selective?: boolean;
+}
+
+export interface EnhanceResult {
+  operationId: string;
+  before: Pick<ApiOperation, 'summary' | 'description'>;
+  after: Pick<ApiOperation, 'summary' | 'description'>;
+  changes: string[];
+}
+
+// ============================================================
+// LLM Backend (shared between Scorer fallback & Enhancer)
+// ============================================================
+
+export interface ILLMBackend {
+  chat(params: {
+    systemPrompt: string;
+    messages: Array<{ role: string; content: string }>;
+  }): Promise<{ content: string }>;
+}
+
+// ============================================================
 // Server Config
 // ============================================================
 

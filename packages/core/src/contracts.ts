@@ -6,6 +6,10 @@ import type {
   ProxyResult,
   CallToolResult,
   SearchResult,
+  ScoreReport,
+  OpScore,
+  EnhanceResult,
+  EnhanceOptions,
 } from './types.js';
 
 // ============================================================
@@ -43,4 +47,24 @@ export interface IRagStore {
   index(operations: ApiOperation[], specName: string): Promise<void>;
   search(query: string, topK: number): Promise<SearchResult[]>;
   clear(specName: string): Promise<void>;
+}
+
+// ============================================================
+// Contract 5: Quality Scorer
+// ============================================================
+
+export interface IScorer {
+  score(operations: ApiOperation[]): Promise<ScoreReport>;
+  scoreOne(op: ApiOperation): Promise<OpScore>;
+}
+
+// ============================================================
+// Contract 6: Enhancer
+// ============================================================
+
+export interface IEnhancer {
+  enhance(
+    operations: ApiOperation[],
+    options?: EnhanceOptions,
+  ): Promise<{ operations: ApiOperation[]; results: EnhanceResult[] }>;
 }
