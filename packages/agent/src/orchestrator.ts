@@ -1,19 +1,9 @@
-import type { CallToolResult } from '@api2mcp/core';
+import type { CallToolResult, ILLMBackend, LLMToolDef } from '@api2mcp/core';
 import type { IToolRegistry } from '@api2mcp/core';
 import type { RAGRetriever } from '@api2mcp/rag';
 
-export interface LLMResponse {
-  toolCalls: Array<{ name: string; arguments: Record<string, unknown> }>;
-  content: string;
-}
-
-export interface ILLMBackend {
-  chat(params: {
-    systemPrompt: string;
-    messages: Array<{ role: string; content: string }>;
-    tools: Array<{ name: string; description: string; inputSchema: Record<string, unknown> }>;
-  }): Promise<LLMResponse>;
-}
+export type LLMResponse = import('@api2mcp/core').LLMCallResult;
+export type { ILLMBackend } from '@api2mcp/core';
 
 export interface AgentStep {
   iteration: number;
@@ -96,8 +86,8 @@ export class AgentOrchestrator {
       '4. Stop when the task is finished. Max 10 iterations.';
   }
 
-  private buildAgentTools(): Array<{ name: string; description: string; inputSchema: Record<string, unknown> }> {
-    const tools: Array<{ name: string; description: string; inputSchema: Record<string, unknown> }> = [];
+  private buildAgentTools(): LLMToolDef[] {
+    const tools: LLMToolDef[] = [];
 
     tools.push({
       name: 'rag_search',

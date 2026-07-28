@@ -1,7 +1,7 @@
-import type { ILLMBackend } from './types.js';
+import type { ILLMBackend, LLMToolDef } from './types.js';
 
 /**
- * Anthropic Claude backend via Anthropic API.
+ * Anthropic Claude backend with tool-use support.
  * Requires ANTHROPIC_API_KEY env var.
  */
 export function createAnthropicBackend(opts?: { model?: string; baseUrl?: string }): ILLMBackend {
@@ -11,16 +11,22 @@ export function createAnthropicBackend(opts?: { model?: string; baseUrl?: string
   return {
     async chat(params) {
       const apiKey = process.env['ANTHROPIC_API_KEY'];
-      if (!apiKey) {
-        throw new Error('ANTHROPIC_API_KEY not set');
-      }
+      if (!apiKey) throw new Error('ANTHROPIC_API_KEY not set');
 
-      const body = JSON.stringify({
+      const requestBody: Record<string, unknown> = {
         model,
-        max_tokens: 1024,
+        max_tokens: 4096,
         system: params.systemPrompt,
         messages: params.messages.map((m) => ({ role: m.role, content: m.content })),
-      });
+      };
+
+      if (params.tools && params.tools.length > 0) {
+        requestBody['tools'] = params.tools.map((t) => ({
+          name: t.name,
+          description: t.description,
+          input_schema: t.inputSchema,
+        }));
+      }
 
       const res = await fetch(baseUrl, {
         method: 'POST',
@@ -29,7 +35,7 @@ export function createAnthropicBackend(opts?: { model?: string; baseUrl?: string
           'x-api-key': apiKey,
           'anthropic-version': '2023-06-01',
         },
-        body,
+        body: JSON.stringify(requestBody),
       });
 
       if (!res.ok) {
@@ -38,22 +44,28 @@ export function createAnthropicBackend(opts?: { model?: string; baseUrl?: string
       }
 
       const data = (await res.json()) as {
-        content: Array<{ type: string; text: string }>;
+        content: Array<{ type: string; text?: string; name?: string; input?: Record<string, unknown> }>;
+        stop_reason?: string;
       };
 
       const text = data.content
-        .filter((c) => c.type === 'text')
-        .map((c) => c.text)
+        .filter((c) => c.type === 'text' && c.text)
+        .map((c) => c.text!)
         .join('');
 
-      return { content: text };
+      const toolBlocks = data.content.filter((c) => c.type === 'tool_use');
+      const toolCalls = toolBlocks.map((t) => ({
+        name: t.name ?? '',
+        arguments: t.input ?? {},
+      }));
+
+      return { content: text, toolCalls };
     },
   };
 }
 
 /**
- * OpenAI-compatible backend.
- * Requires OPENAI_API_KEY env var, works with any OpenAI-compatible endpoint.
+ * OpenAI-compatible backend with function-calling support.
  */
 export function createOpenAIBackend(opts?: { model?: string; baseUrl?: string }): ILLMBackend {
   const model = opts?.model ?? 'gpt-4o-mini';
@@ -62,18 +74,23 @@ export function createOpenAIBackend(opts?: { model?: string; baseUrl?: string })
   return {
     async chat(params) {
       const apiKey = process.env['OPENAI_API_KEY'];
-      if (!apiKey) {
-        throw new Error('OPENAI_API_KEY not set');
-      }
+      if (!apiKey) throw new Error('OPENAI_API_KEY not set');
 
-      const body = JSON.stringify({
+      const requestBody: Record<string, unknown> = {
         model,
-        max_tokens: 1024,
+        max_tokens: 4096,
         messages: [
           { role: 'system', content: params.systemPrompt },
           ...params.messages.map((m) => ({ role: m.role, content: m.content })),
         ],
-      });
+      };
+
+      if (params.tools && params.tools.length > 0) {
+        requestBody['tools'] = params.tools.map((t) => ({
+          type: 'function',
+          function: { name: t.name, description: t.description, parameters: t.inputSchema },
+        }));
+      }
 
       const res = await fetch(baseUrl, {
         method: 'POST',
@@ -81,7 +98,7 @@ export function createOpenAIBackend(opts?: { model?: string; baseUrl?: string })
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${apiKey}`,
         },
-        body,
+        body: JSON.stringify(requestBody),
       });
 
       if (!res.ok) {
@@ -90,24 +107,31 @@ export function createOpenAIBackend(opts?: { model?: string; baseUrl?: string })
       }
 
       const data = (await res.json()) as {
-        choices: Array<{ message: { content: string } }>;
+        choices: Array<{
+          message: {
+            content: string | null;
+            tool_calls?: Array<{ function: { name: string; arguments: string } }>;
+          };
+        }>;
       };
 
-      return { content: data.choices[0]?.message?.content ?? '' };
+      const msg = data.choices[0]?.message;
+      const toolCalls = (msg?.tool_calls ?? []).map((tc) => {
+        let args: Record<string, unknown> = {};
+        try { args = JSON.parse(tc.function.arguments); } catch { /* ignore */ }
+        return { name: tc.function.name, arguments: args };
+      });
+
+      return { content: msg?.content ?? '', toolCalls };
     },
   };
 }
 
 /**
  * Auto-detect available LLM backend from environment.
- * Priority: Anthropic > OpenAI
  */
 export function createLLMBackend(opts?: { model?: string }): ILLMBackend | null {
-  if (process.env['ANTHROPIC_API_KEY']) {
-    return createAnthropicBackend(opts);
-  }
-  if (process.env['OPENAI_API_KEY']) {
-    return createOpenAIBackend(opts);
-  }
+  if (process.env['ANTHROPIC_API_KEY']) return createAnthropicBackend(opts);
+  if (process.env['OPENAI_API_KEY']) return createOpenAIBackend(opts);
   return null;
 }

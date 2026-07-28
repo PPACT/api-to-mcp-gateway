@@ -1,18 +1,25 @@
 import { describe, it, expect } from 'vitest';
 import { Enhancer } from '../enhancer.js';
-import type { ApiOperation, ILLMBackend } from '../types.js';
+import type { ApiOperation, ILLMBackend, LLMCallResult } from '../types.js';
 
 // Mock LLM that returns pre-defined responses
 class MockLLM implements ILLMBackend {
-  async chat(params: { systemPrompt: string; messages: Array<{ role: string; content: string }> }) {
+  async chat(): Promise<LLMCallResult> {
+    return { content: '{}', toolCalls: [] };
+  }
+}
+
+class SmartMockLLM implements ILLMBackend {
+  async chat(params: { systemPrompt: string; messages: Array<{ role: string; content: string }> }): Promise<LLMCallResult> {
     const msg = params.messages[0]?.content ?? '';
 
     if (msg.includes('getUserById')) {
       return {
         content: JSON.stringify({
           summary: 'Retrieve a user by their unique identifier',
-          description: 'Returns complete user profile including contact details, preferences, and account status. Suitable for user lookup in workflows.',
+          description: 'Returns complete user profile including contact details, preferences, and account status.',
         }),
+        toolCalls: [],
       };
     }
 
@@ -20,10 +27,10 @@ class MockLLM implements ILLMBackend {
       return { content: JSON.stringify([
         { operationId: 'addPet', enhancedSummary: 'Add a new pet to the store', enhancedDescription: 'Creates a new pet entry with name and status fields.' },
         { operationId: 'getPetById', enhancedSummary: 'Find pet by ID', enhancedDescription: 'Retrieves a pet record by its unique numeric identifier.' },
-      ]) };
+      ]), toolCalls: [] };
     }
 
-    return { content: '{}' };
+    return { content: '{}', toolCalls: [] };
   }
 }
 
@@ -43,7 +50,7 @@ function makeOp(overrides: Partial<ApiOperation> = {}): ApiOperation {
 }
 
 describe('Enhancer', () => {
-  const mockLLM = new MockLLM();
+  const mockLLM = new SmartMockLLM();
   const enhancer = new Enhancer(mockLLM);
 
   it('增强缺失的 description', async () => {

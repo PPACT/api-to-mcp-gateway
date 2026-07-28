@@ -244,11 +244,23 @@ export interface EnhanceResult {
 // LLM Backend (shared between Scorer fallback & Enhancer)
 // ============================================================
 
+export interface LLMToolDef {
+  name: string;
+  description: string;
+  inputSchema: Record<string, unknown>;
+}
+
+export interface LLMCallResult {
+  toolCalls: Array<{ name: string; arguments: Record<string, unknown> }>;
+  content: string;
+}
+
 export interface ILLMBackend {
   chat(params: {
     systemPrompt: string;
     messages: Array<{ role: string; content: string }>;
-  }): Promise<{ content: string }>;
+    tools?: LLMToolDef[];
+  }): Promise<LLMCallResult>;
 }
 
 // ============================================================
