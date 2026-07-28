@@ -3,7 +3,7 @@ import { parseOpenApiSpec } from '../parser.js';
 
 describe('parseOpenApiSpec', () => {
   it('parses a valid OpenAPI 3.0 spec and extracts operations', async () => {
-    const operations = await parseOpenApiSpec('specs/petstore.yaml');
+    const operations = await parseOpenApiSpec('../../specs/petstore.yaml');
 
     expect(operations).toHaveLength(3);
 
