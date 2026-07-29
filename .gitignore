@@ -22,6 +22,12 @@ secrets*
 *.js.map
 *.d.ts.map
 
+# 下载的外部 API 文档（体积大，不提交）
+*.json
+!package.json
+!package-lock.json
+!tsconfig*.json
+
 # 内部规划文档（不公开）
 SPEC.md
 SDLC.md
