@@ -10,24 +10,29 @@ import {
   createMCPServer,
   AuthManager,
 } from '@api2mcp/server';
+import { RAGIndexer, MemoryVectorStore, RAGRetriever } from '@api2mcp/rag';
+import { AgentOrchestrator } from '@api2mcp/agent';
 
 const HELP = `api2mcp — Convert OpenAPI specs to MCP Servers
 
 Usage:
   api2mcp serve --spec <path-or-url> [options]
+  api2mcp agent  --spec <path-or-url> --task <description>
 
 Options:
   --spec, -s    Path to OpenAPI spec file or remote URL (required)
   --port, -p    Server port (default: 3000)
   --host, -H    Server host (default: 127.0.0.1)
   --score       Score API documentation quality before serving
-  --enhance     Auto-enhance poor descriptions (requires --score or standalone)
+  --enhance     Auto-enhance poor descriptions (requires --score)
+  --agent, -a   Run agent orchestration mode (one-shot task execution)
+  --task, -t    Task description for agent mode
   --help, -h    Show this help message
 
 Examples:
   api2mcp serve --spec ./specs/petstore.yaml
   api2mcp serve --spec ./specs/petstore.yaml --score
-  api2mcp serve --spec https://petstore.swagger.io/v2/swagger.json --port 8080 --score --enhance
+  api2mcp serve --spec ./specs/petstore.yaml --agent --task "Add a new pet named max"
 `;
 
 function isUrl(str: string): boolean {
@@ -107,6 +112,8 @@ async function main(): Promise<void> {
       host: { type: 'string', short: 'H' },
       score: { type: 'boolean', default: false },
       enhance: { type: 'boolean', default: false },
+      agent: { type: 'boolean', short: 'a', default: false },
+      task: { type: 'string', short: 't' },
       help: { type: 'boolean', short: 'h', default: false },
     },
     strict: false,
@@ -144,6 +151,8 @@ async function main(): Promise<void> {
   const host = typeof hostVal === 'string' ? hostVal : '127.0.0.1';
   const doScore = values.score as boolean;
   const doEnhance = values.enhance as boolean;
+  const doAgent = values.agent as boolean;
+  const taskDesc = values.task as string | undefined;
 
   const auth = new AuthManager();
   const proxy = new ApiProxy();
@@ -243,6 +252,38 @@ async function main(): Promise<void> {
         }
       }
     }
+  }
+
+  // ---- Agent Mode ----
+  if (doAgent) {
+    if (!taskDesc) {
+      process.stderr.write('Error: --agent requires --task <description>.\n');
+      process.exit(1);
+    }
+    const llm = createLLMBackend();
+    if (!llm) {
+      process.stderr.write('Error: --agent requires ANTHROPIC_API_KEY or OPENAI_API_KEY.\n');
+      process.exit(1);
+    }
+
+    // Build RAG index
+    const store = new MemoryVectorStore();
+    const indexer = new RAGIndexer(store);
+    await indexer.index(allOperations, 'spec');
+    const retriever = new RAGRetriever(store);
+
+    const orchestrator = new AgentOrchestrator(registry, retriever, llm);
+    process.stdout.write('\nAgent executing: ' + taskDesc + '\n\n');
+
+    const result = await orchestrator.execute(taskDesc);
+    process.stdout.write('Result: ' + (result.success ? 'Success' : 'Failed') + '\n');
+    process.stdout.write('Steps: ' + result.steps.length + '\n');
+    for (const step of result.steps) {
+      const icon = step.action === 'complete' ? '✓' : step.action === 'error' ? '✗' : '→';
+      process.stdout.write('  ' + icon + ' [' + step.action + '] ' + step.detail + '\n');
+    }
+    process.stdout.write('\n' + result.finalAnswer + '\n');
+    process.exit(0);
   }
 
   // ---- Start Server ----
