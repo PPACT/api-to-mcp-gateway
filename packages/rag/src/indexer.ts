@@ -1,18 +1,30 @@
 import type { ApiOperation } from '@api2mcp/core';
 import { MemoryVectorStore, type VectorDoc } from './store.js';
 
+type EmbedFn = (texts: string[]) => Promise<number[][]>;
+
 /**
  * Indexes API operations as searchable documents in a vector store.
- * Uses a simple hash-based embedding for demo purposes.
+ * Accepts an optional embedding function; falls back to hash-based embedding.
  */
 export class RAGIndexer {
-  constructor(private store: MemoryVectorStore) {}
+  private embed: EmbedFn;
+
+  constructor(private store: MemoryVectorStore, embed?: EmbedFn) {
+    this.embed = embed ?? (async (texts) => texts.map((t) => hashEmbedding(t, 128)));
+  }
 
   async index(operations: ApiOperation[], specName: string): Promise<void> {
-    for (const op of operations) {
-      const docText = buildDocumentText(op, specName);
-      const embedding = hashEmbedding(docText, 128);
+    const docs = operations.map((op) => ({
+      op,
+      text: buildDocumentText(op, specName),
+    }));
 
+    const embeddings = await this.embed(docs.map((d) => d.text));
+
+    for (let i = 0; i < docs.length; i++) {
+      const { op, text } = docs[i]!;
+      const embedding = embeddings[i]!;
       const doc: VectorDoc = {
         id: specName + '::' + op.operationId,
         embedding,

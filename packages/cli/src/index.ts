@@ -3,7 +3,7 @@ import { parseArgs } from 'node:util';
 import { existsSync, readFileSync, writeFileSync, rmSync, mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { parseOpenApiSpec, Scorer, Enhancer, createLLMBackend, type ApiSource, type ScoreReport } from '@api2mcp/core';
+import { parseOpenApiSpec, Scorer, Enhancer, createLLMBackend, createEmbeddingProvider, type ApiSource, type ScoreReport } from '@api2mcp/core';
 import {
   ToolRegistry,
   ApiProxy,
@@ -266,9 +266,9 @@ async function main(): Promise<void> {
       process.exit(1);
     }
 
-    // Build RAG index
+    // Build RAG index (OpenAI embedding if available, hash fallback otherwise)
     const store = new MemoryVectorStore();
-    const indexer = new RAGIndexer(store);
+    const indexer = new RAGIndexer(store, createEmbeddingProvider());
     await indexer.index(allOperations, 'spec');
     const retriever = new RAGRetriever(store);
 

@@ -135,3 +135,41 @@ export function createLLMBackend(opts?: { model?: string }): ILLMBackend | null 
   if (process.env['OPENAI_API_KEY']) return createOpenAIBackend(opts);
   return null;
 }
+
+/**
+ * Create an embedding function. Uses OpenAI text-embedding-3-small when
+ * OPENAI_API_KEY is set, otherwise falls back to a simple hash-based embedding
+ * (deterministic but low quality — suitable for demos).
+ */
+export function createEmbeddingProvider(): (texts: string[]) => Promise<number[][]> {
+  const apiKey = process.env['OPENAI_API_KEY'];
+
+  if (apiKey) {
+    const model = 'text-embedding-3-small';
+    const baseUrl = process.env['OPENAI_EMBEDDING_URL'] ?? 'https://api.openai.com/v1/embeddings';
+
+    return async (texts: string[]) => {
+      const res = await fetch(baseUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
+        body: JSON.stringify({ model, input: texts }),
+      });
+      if (!res.ok) throw new Error(`OpenAI embedding error ${res.status}`);
+      const data = (await res.json()) as { data: Array<{ embedding: number[] }> };
+      return data.data.map((d) => d.embedding);
+    };
+  }
+
+  // Fallback: simple hash embedding (128-dim, deterministic)
+  return async (texts: string[]) => texts.map((t) => hashEmbed(t, 128));
+}
+
+function hashEmbed(text: string, dims: number): number[] {
+  const emb = new Array<number>(dims).fill(0);
+  for (let i = 0; i < text.length; i++) {
+    emb[(text.charCodeAt(i) * 31 + i * 7) % dims]! += 1;
+  }
+  const norm = Math.sqrt(emb.reduce((s, v) => s + v * v, 0));
+  if (norm > 0) for (let i = 0; i < dims; i++) emb[i] = emb[i]! / norm;
+  return emb;
+}
