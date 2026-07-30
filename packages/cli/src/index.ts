@@ -13,26 +13,33 @@ import {
 import { RAGIndexer, MemoryVectorStore, RAGRetriever } from '@api2mcp/rag';
 import { AgentOrchestrator } from '@api2mcp/agent';
 
+import { convertOperation } from '@api2mcp/core';
+
 const HELP = `api2mcp — Convert OpenAPI specs to MCP Servers
 
 Usage:
-  api2mcp serve --spec <path-or-url> [options]
-  api2mcp agent  --spec <path-or-url> --task <description>
+  api2mcp serve  --spec <path-or-url> [options]
+  api2mcp render --spec <path-or-url> [--output <file>]
+
+Commands:
+  serve    Start an MCP Server that proxies API calls
+  render   Generate MCP tool definitions file for AI to read
 
 Options:
   --spec, -s    Path to OpenAPI spec file or remote URL (required)
-  --port, -p    Server port (default: 3000)
-  --host, -H    Server host (default: 127.0.0.1)
+  --output, -o  Output file for render command (default: stdout)
+  --port, -p    Server port (serve mode, default: 3000)
+  --host, -H    Server host (serve mode, default: 127.0.0.1)
   --score       Score API documentation quality before serving
-  --enhance     Auto-enhance poor descriptions (requires --score)
-  --agent, -a   Run agent orchestration mode (one-shot task execution)
+  --enhance     Auto-enhance poor descriptions
+  --agent, -a   Run one-shot agent task
   --task, -t    Task description for agent mode
   --help, -h    Show this help message
 
 Examples:
-  api2mcp serve --spec ./specs/petstore.yaml
-  api2mcp serve --spec ./specs/petstore.yaml --score
-  api2mcp serve --spec ./specs/petstore.yaml --agent --task "Add a new pet named max"
+  api2mcp render --spec ./specs/petstore.yaml
+  api2mcp render --spec ./specs/petstore.yaml --output mcp-tools.json
+  api2mcp serve  --spec ./specs/petstore.yaml
 `;
 
 function isUrl(str: string): boolean {
@@ -42,6 +49,60 @@ function isUrl(str: string): boolean {
   } catch {
     return false;
   }
+}
+
+async function renderCommand(specs: string[], outputFile?: string): Promise<void> {
+  const allTools: ReturnType<typeof convertOperation>[] = [];
+
+  for (const spec of specs) {
+    const resolved = await resolveSpec(spec);
+    const operations = await parseOpenApiSpec(resolved.path);
+    const sourceName = sanitizeName(resolved.name);
+    for (const op of operations) {
+      allTools.push(convertOperation(op, sourceName));
+    }
+    if (resolved.tmpDir) {
+      try { rmSync(resolved.tmpDir, { recursive: true, force: true }); } catch { /* ignore */ }
+    }
+  }
+
+  const output = allTools.length === 1
+    ? JSON.stringify(allTools[0], null, 2)
+    : JSON.stringify(allTools, null, 2);
+
+  if (outputFile) {
+    writeFileSync(outputFile, output, 'utf-8');
+    process.stdout.write('Generated ' + allTools.length + ' MCP tool(s) → ' + outputFile + '\n');
+  } else {
+    process.stdout.write(output + '\n');
+  }
+}
+
+/** resolve a spec path/URL → local file path and source name */
+async function resolveSpec(spec: string): Promise<{ path: string; name: string; tmpDir?: string }> {
+  if (isUrl(spec)) {
+    process.stdout.write('Fetching ' + spec + '...\n');
+    const response = await fetch(spec);
+    if (!response.ok) throw new Error('HTTP ' + response.status);
+    const text = await response.text();
+    const tmpDir = mkdtempSync(join(tmpdir(), 'api2mcp-'));
+    const specPath = join(tmpDir, 'spec.yaml');
+    writeFileSync(specPath, text, 'utf-8');
+
+    const { parse } = await import('yaml');
+    let specObj: Record<string, unknown>;
+    try { specObj = JSON.parse(text); } catch { specObj = parse(text); }
+    const info = (specObj.info ?? {}) as Record<string, unknown>;
+    return { path: specPath, name: (info.title as string) ?? 'api', tmpDir };
+  }
+
+  if (!existsSync(spec)) throw new Error('Spec file not found: ' + spec);
+  const raw = readFileSync(spec, 'utf-8');
+  const { parse } = await import('yaml');
+  let specObj: Record<string, unknown>;
+  try { specObj = JSON.parse(raw); } catch { specObj = parse(raw); }
+  const info = (specObj.info ?? {}) as Record<string, unknown>;
+  return { path: spec, name: (info.title as string) ?? 'api' };
 }
 
 function sanitizeName(raw: string): string {
@@ -112,6 +173,7 @@ async function main(): Promise<void> {
       host: { type: 'string', short: 'H' },
       score: { type: 'boolean', default: false },
       enhance: { type: 'boolean', default: false },
+      output: { type: 'string', short: 'o' },
       agent: { type: 'boolean', short: 'a', default: false },
       task: { type: 'string', short: 't' },
       help: { type: 'boolean', short: 'h', default: false },
@@ -120,14 +182,6 @@ async function main(): Promise<void> {
     allowPositionals: true,
   });
 
-  if (positionals.length > 0) {
-    const sub = positionals[0];
-    if (sub !== 'serve') {
-      process.stderr.write('Unknown command: ' + sub + '\nUse --help for usage.\n');
-      process.exit(1);
-    }
-  }
-
   if (values.help) {
     process.stdout.write(HELP);
     process.exit(0);
@@ -135,6 +189,17 @@ async function main(): Promise<void> {
 
   const specArg = values.spec as string | string[] | undefined;
   const specArgs: string[] = Array.isArray(specArg) ? specArg : specArg ? [specArg] : [];
+  if (positionals.length > 0 && positionals[0] !== 'serve') {
+    const sub = positionals[0];
+    if (sub === 'render') {
+      await renderCommand(specArgs, values.output as string | undefined);
+      return;
+    }
+    process.stderr.write('Unknown command: ' + sub + '\nUse --help for usage.\n');
+    process.exit(1);
+  }
+  // no subcommand → default to serve
+
   if (specArgs.length === 0) {
     process.stderr.write('Error: --spec is required. Use --help for usage.\n');
     process.exit(1);
