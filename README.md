@@ -1,6 +1,6 @@
 # API-to-MCP Gateway
 
-api-to-mcp-gateway：把任意 OpenAPI/Swagger 变成安全、可治理、可审计的 MCP 工具层，让 AI Agent 按权限调用现有 API。
+把任意 OpenAPI/Swagger 变成安全、可治理、可审计的 MCP 工具层，让 AI Agent 按权限调用现有 API。
 
 ## 快速开始
 
