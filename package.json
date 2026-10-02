@@ -2,6 +2,7 @@
   "name": "api-to-mcp-gateway",
   "version": "0.1.0",
   "private": true,
+  "license": "MIT",
   "description": "Convert OpenAPI specs to MCP Servers",
   "workspaces": ["packages/*"],
   "scripts": {
