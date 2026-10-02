@@ -1,9 +1,15 @@
 import { describe, it, expect } from 'vitest';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { parseOpenApiSpec } from '../parser.js';
+
+// Resolve the fixture against this file, not the process cwd — otherwise the test
+// only passes when vitest happens to be launched from `packages/core`.
+const SPEC_PATH = resolve(dirname(fileURLToPath(import.meta.url)), '../../../../specs/petstore.yaml');
 
 describe('parseOpenApiSpec', () => {
   it('parses a valid OpenAPI 3.0 spec and extracts operations', async () => {
-    const operations = await parseOpenApiSpec('../../specs/petstore.yaml');
+    const operations = await parseOpenApiSpec(SPEC_PATH);
 
     expect(operations).toHaveLength(3);
 
