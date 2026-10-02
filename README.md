@@ -2,11 +2,13 @@
 
 把任意 OpenAPI/Swagger 变成安全、可治理、可审计的 MCP 工具层，让 AI Agent 按权限调用现有 API。
 
+> 📖 **文档**：[架构](docs/architecture.md) ｜ [使用](docs/usage.md) ｜ [安全模型](docs/security.md) ｜ [**能力矩阵（已实现 / 未实现）**](docs/README.md#能力矩阵)
+
 ## 快速开始
 
 ```
 pnpm install
-pnpm test
+pnpm --filter @api2mcp/core --filter @api2mcp/agent test
 pnpm start -- --spec ./specs/petstore.yaml
 ```
 
@@ -25,7 +27,7 @@ OpenAPI 文档 --> Parser --> Converter --> ToolRegistry --> MCP Server (JSON-RP
 
 1. 解析 — 从文档中提取所有端点和参数
 2. 转换 — 将每个 operation 映射为 MCP tool（snake_case 命名，JSON Schema）
-3. 服务 — 通过 Streamable HTTP + JSON-RPC 2.0 暴露 tools
+3. 服务 — 通过 JSON-RPC 2.0 暴露 tools（`POST /mcp` 单次请求—响应）
 4. 代理 — 将 tool 调用转发为真实 HTTP 请求
 
 ## 项目结构
@@ -61,7 +63,7 @@ MCP SDK，@apidevtools/swagger-parser，yaml，Vitest。
 
 ```
 pnpm install    安装依赖
-pnpm test       运行全部测试
-pnpm build      编译 TypeScript
-pnpm start -- --spec <path|url>   启动 MCP Gateway
+pnpm --filter @api2mcp/core --filter @api2mcp/agent test   运行当前有测试覆盖的包
+pnpm start -- --spec <path|url>              启动 MCP Gateway
+pnpm start -- render --spec <path|url>       导出 MCP tool 定义
 ```
