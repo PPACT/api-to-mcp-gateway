@@ -32,7 +32,7 @@ API-to-MCP Gateway —— 把 OpenAPI 文档变成**安全、可治理、可审�
 |---|---|---|
 | MCP JSON-RPC 2.0（`initialize` / `tools/list` / `tools/call`） | ✅ | `server/src/server.ts`，协议版本 `2024-11-05` |
 | Streamable HTTP（SSE 流式 / 会话） | ❌ | 仅实现 `POST /mcp` 单次请求—响应 |
-| 请求转发 + 超时（30s） | ✅ | `server/src/proxy.ts` |
+| 请求转发 + 超时（30s） | ✅ | 执行：`server/src/proxy.ts`；超时值 `30000` 定在 `server/src/tools.ts:51` |
 | 非 JSON 响应体的透传 | ❌ | 响应强制按 JSON 解析，解析失败时**静默回退为空对象** |
 | 参数校验 / 白名单 / 路径转义 | ❌ | `server/src/tools.ts` 直接拼接并转发调用方入参 |
 | **按权限调用（per-tool 授权）** | ❌ | 代码中无权限 / 策略 / 角色相关实现 |
