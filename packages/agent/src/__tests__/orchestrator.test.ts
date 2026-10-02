@@ -2,7 +2,6 @@ import { describe, it, expect } from 'vitest';
 import { AgentOrchestrator } from '../orchestrator.js';
 import type { ILLMBackend, LLMCallResult, CallToolResult, MCPToolDef, ApiOperation, ApiSource } from '@api2mcp/core';
 import type { IToolRegistry } from '@api2mcp/core';
-import type { RAGRetriever } from '@api2mcp/rag';
 import { MemoryVectorStore } from '@api2mcp/rag';
 import { RAGIndexer } from '@api2mcp/rag';
 import { RAGRetriever } from '@api2mcp/rag';
