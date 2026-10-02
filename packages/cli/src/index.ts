@@ -10,6 +10,7 @@ import {
   createMCPServer,
   AuthManager,
 } from '@api2mcp/server';
+import { isUrl, sanitizeName } from './util.js';
 import { RAGIndexer, MemoryVectorStore, RAGRetriever } from '@api2mcp/rag';
 import { AgentOrchestrator } from '@api2mcp/agent';
 
@@ -41,15 +42,6 @@ Examples:
   api2mcp render --spec ./specs/petstore.yaml --output mcp-tools.json
   api2mcp serve  --spec ./specs/petstore.yaml
 `;
-
-function isUrl(str: string): boolean {
-  try {
-    new URL(str);
-    return true;
-  } catch {
-    return false;
-  }
-}
 
 async function renderCommand(specs: string[], outputFile?: string): Promise<void> {
   const allTools: ReturnType<typeof convertOperation>[] = [];
@@ -103,14 +95,6 @@ async function resolveSpec(spec: string): Promise<{ path: string; name: string; 
   try { specObj = JSON.parse(raw); } catch { specObj = parse(raw); }
   const info = (specObj.info ?? {}) as Record<string, unknown>;
   return { path: spec, name: (info.title as string) ?? 'api' };
-}
-
-function sanitizeName(raw: string): string {
-  return raw
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '_')
-    .replace(/^_|_$/g, '')
-    .slice(0, 50);
 }
 
 function autoDetectAuth(auth: AuthManager, sourceName: string): void {
