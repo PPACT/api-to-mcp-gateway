@@ -136,17 +136,29 @@ export function createLLMBackend(opts?: { model?: string }): ILLMBackend | null 
   return null;
 }
 
+export interface EmbeddingProviderOptions {
+  env?: NodeJS.ProcessEnv;
+  /** Override the warning sink (tests inject a spy here). */
+  warn?: (line: string) => void;
+}
+
 /**
  * Create an embedding function. Uses OpenAI text-embedding-3-small when
  * OPENAI_API_KEY is set, otherwise falls back to a simple hash-based embedding
  * (deterministic but low quality — suitable for demos).
+ *
+ * ⚠️ The fallback still applies — demos and tests rely on it — but it now
+ * announces itself on stderr instead of degrading silently.
  */
-export function createEmbeddingProvider(): (texts: string[]) => Promise<number[][]> {
-  const apiKey = process.env['OPENAI_API_KEY'];
+export function createEmbeddingProvider(
+  options: EmbeddingProviderOptions = {},
+): (texts: string[]) => Promise<number[][]> {
+  const env = options.env ?? process.env;
+  const apiKey = env['OPENAI_API_KEY'];
 
   if (apiKey) {
     const model = 'text-embedding-3-small';
-    const baseUrl = process.env['OPENAI_EMBEDDING_URL'] ?? 'https://api.openai.com/v1/embeddings';
+    const baseUrl = env['OPENAI_EMBEDDING_URL'] ?? 'https://api.openai.com/v1/embeddings';
 
     return async (texts: string[]) => {
       const res = await fetch(baseUrl, {
@@ -160,7 +172,16 @@ export function createEmbeddingProvider(): (texts: string[]) => Promise<number[]
     };
   }
 
-  // Fallback: simple hash embedding (128-dim, deterministic)
+  // Fallback: simple hash embedding (128-dim, deterministic).
+  // Kept deliberately — but it must not be silent, or callers mistake it for
+  // real semantic search and read retrieval noise as signal.
+  const warn = options.warn ?? ((line: string) => { process.stderr.write(line); });
+  warn(
+    'Warning: OPENAI_API_KEY is not set — RAG falls back to hash-based embeddings.\n' +
+    '         They are deterministic but carry no semantics, so retrieval quality is poor.\n' +
+    '         Set OPENAI_API_KEY for real semantic search.\n',
+  );
+
   return async (texts: string[]) => texts.map((t) => hashEmbed(t, 128));
 }
 
