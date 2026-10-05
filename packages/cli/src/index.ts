@@ -11,6 +11,7 @@ import {
   AuthManager,
 } from '@api2mcp/server';
 import { isUrl, sanitizeName } from './util.js';
+import { applyAutoDetectAuth } from './auth-detect.js';
 import { RAGIndexer, MemoryVectorStore, RAGRetriever } from '@api2mcp/rag';
 import { AgentOrchestrator } from '@api2mcp/agent';
 
@@ -95,26 +96,6 @@ async function resolveSpec(spec: string): Promise<{ path: string; name: string; 
   try { specObj = JSON.parse(raw); } catch { specObj = parse(raw); }
   const info = (specObj.info ?? {}) as Record<string, unknown>;
   return { path: spec, name: (info.title as string) ?? 'api' };
-}
-
-function autoDetectAuth(auth: AuthManager, sourceName: string): void {
-  const normalized = sourceName.toLowerCase();
-  const envVars: Record<string, string> = {
-    github: 'GITHUB_TOKEN',
-    notion: 'NOTION_API_KEY',
-    feishu: 'FEISHU_APP_TOKEN',
-    wechat: 'WECHAT_TOKEN',
-    slack: 'SLACK_TOKEN',
-    openai: 'OPENAI_API_KEY',
-    anthropic: 'ANTHROPIC_API_KEY',
-  };
-
-  for (const [key, envVar] of Object.entries(envVars)) {
-    if (normalized.includes(key) && process.env[envVar]) {
-      auth.register(sourceName, { type: 'bearer', envVar });
-      return;
-    }
-  }
 }
 
 function printScoreReport(report: ScoreReport): void {
@@ -258,7 +239,7 @@ async function main(): Promise<void> {
         description: info.description as string | undefined,
       };
 
-      autoDetectAuth(auth, sourceName);
+      applyAutoDetectAuth(auth, sourceName);
 
       for (const op of operations) {
         registry.register(op, source);
