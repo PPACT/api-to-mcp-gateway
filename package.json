@@ -2,7 +2,7 @@
   "name": "api-to-mcp-gateway",
   "version": "0.1.0",
   "private": true,
-  "license": "MIT",
+  "license": "Apache-2.0",
   "description": "Convert OpenAPI specs to MCP Servers",
   "workspaces": ["packages/*"],
   "scripts": {

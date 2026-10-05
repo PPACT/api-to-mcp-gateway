@@ -7,7 +7,7 @@
 [![pnpm][pnpm-shield]][pnpm-url]
 [![MCP][mcp-shield]][mcp-url]
 [![Issues][issues-shield]][issues-url]
-[![License: MIT][license-shield]][license-url]
+[![License: Apache 2.0][license-shield]][license-url]
 
 <!-- 标题 -->
 <br />
@@ -213,12 +213,13 @@ docs/         公开文档（架构 / 使用 / 安全 / 能力矩阵）
 
 ## 许可证
 
-基于 **MIT 许可证**分发 —— 详见 [`LICENSE`](LICENSE)。
+基于 **Apache License 2.0** 分发 —— 详见 [`LICENSE`](LICENSE)。
 
-任何人都可以自由地使用、复制、修改、合并、发布、分发、再许可和/或销售本软件，
-唯一要求是**保留版权声明与许可证声明**。本软件按「原样」提供，**不含任何担保**。
+Copyright 2026 PPACT。任何人都可以自由地使用、复制、修改、分发本软件（**含商业用途**），
+条件是**保留版权与许可证声明**、**标明改动**，并随附 `LICENSE` 全文。本软件按「原样」提供，**不含任何担保**。
 
-> ⚠️ 取舍说明：MIT **不含显式的专利授权条款**（对比 Apache-2.0）。选它换取的是**最短、最低摩擦**。
+> ✅ 取舍说明：Apache-2.0 **含显式的专利授权**（第 3 条：贡献者向使用者授予专利许可，并随专利诉讼而终止）——
+> 这是它相对 MIT 的主要增益；代价是**许可文本更长**，且再分发时有**声明保留 / 变更说明**义务。
 
 <p align="right">(<a href="#readme-top">回到顶部</a>)</p>
 
@@ -247,5 +248,5 @@ docs/         公开文档（架构 / 使用 / 安全 / 能力矩阵）
 [mcp-url]: https://modelcontextprotocol.io
 [issues-shield]: https://img.shields.io/github/issues/PPACT/api-to-mcp-gateway?style=for-the-badge
 [issues-url]: https://github.com/PPACT/api-to-mcp-gateway/issues
-[license-shield]: https://img.shields.io/badge/license-MIT-blue?style=for-the-badge
+[license-shield]: https://img.shields.io/badge/license-Apache%202.0-blue?style=for-the-badge
 [license-url]: LICENSE
